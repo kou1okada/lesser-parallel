@@ -1,0 +1,150 @@
+#!/usr/bin/env bash
+
+# Lesser Parallel
+# Copyright (c) 2014 Koichi OKADA. All rights reserved.
+# The official repository is:
+# https://github.com/kou1okada/lesser-parallel
+# This script is distributed under the MIT license.
+# http://www.opensource.org/licenses/mit-license.php
+
+LESSER_PARALLEL_MAX_JOBS=${LESSER_PARALLEL_MAX_JOBS:-8}
+
+function lesser-parallel-get-jobs-count ()
+{
+  jobs -l >/dev/null
+  jobs -l | wc -l
+}
+
+# Usage: lesser-parallel-restrict-jobs-count MAXJOBS
+function lesser-parallel-restrict-jobs-count ()
+{
+  while [ $(lesser-parallel-get-jobs-count) -ge $1 ]; do
+    sleep 0.2
+  done
+}
+
+# Usage: lesser-parallel [command [arguments]] < list_ot_arguments
+function lesser-parallel ()
+{
+  local cmd arg lines line basename ext PARALLEL_SEQ=1
+  readarray -t lines
+  for line in "${lines[@]}"; do
+    basename="$(basename "$line")"
+    ext="${basename##*.}"
+    [ "$ext" = "$basename" ] && ext=""
+    [ "$ext" != "" ] && ext=".$ext"
+    cmd=( )
+    for arg; do
+      case "$arg" in
+      "{}")
+        cmd+=( "$line" )
+        ;;
+      "{.}")
+        cmd+=( "$(basename "$line" "$ext")" )
+        ;;
+      "{/}")
+        cmd+=( "$basename" )
+        ;;
+      "{//}")
+        cmd+=( "$(dirname "$line")" )
+        ;;
+      "{/.}")
+        cmd+=( "$(basename "$basename" "$ext")" )
+        ;;
+      "{#}")
+        cmd+=( "$PARALLEL_SEQ" )
+        ;;
+      *)
+        cmd+=( "$arg" )
+        ;;
+      esac
+    done
+    
+    lesser-parallel-restrict-jobs-count $LESSER_PARALLEL_MAX_JOBS
+    
+    "${cmd[@]}" &
+    PARALLEL_SEQ=$[$PARALLEL_SEQ + 1]
+  done
+  
+  lesser-parallel-restrict-jobs-count 1
+}
+
+#/Lesser Parallel
+
+function lesser-parallel-help ()
+{
+cat <<EOD
+Usage:
+  ${SCRIPTNAME} [options] [command [arguments]] < list_ot_arguments
+  cat ... | ${SCRIPTNAME} [options] [command [arguments]]
+options:
+  -j N        Run n jobs in parallel
+  -e [FILE]   Embed Lesser Parallel to FILE
+  -h, --help
+arguments:
+  {} {.} {/} {/.} {#}  Replacement strings
+
+EOD
+}
+
+function lesser-parallel-embed ()
+{
+  local LINES="$(wc -l < "$SCRIPTFILE")"
+  local code
+  code="$(grep -A "$LINES" "^# Lesser Parallel" "$SCRIPTFILE" \
+         | grep -B "$LINES" "^#/Lesser Parallel" \
+         | awk '{print $0 ($0 ~ /^#[ /]Lesser Parallel/ ? " for Embedding" : "")}')" #"
+  if [ -f "$1" ]; then
+    awk -v code="$code" '
+      /^# Lesser Parallel for Embedding/ {embedded = embed = 1; print code}
+      !embed {print $0}
+      /^#\/Lesser Parallel for Embedding/ {embed = 0}
+      END {exit embedded != 1}
+    ' "$1" > "$1.tmp$$"
+    if [ $? -eq 0 ]; then
+      mv "$1" "$1.$(date -d "$(stat "$1" -c %y)" "+%Y%m%d_%H%M%S")~"
+      mv "$1.tmp$$" "$1"
+      echo "Lesser Parallel is Embedded to $1."
+    else
+      echo "$1 has no embeddig markers."
+    fi
+  else
+    echo "$code"
+  fi
+}
+
+SCRIPTNAME="${0##*/}"
+SCRIPTFILE="$(realpath "$(which $0)")"
+
+while [ $# -gt 0 ]; do
+  if [ ${#ARGS[@]} -eq 0 ]; then
+    case "$1" in
+    -j)
+      LESSER_PARALLEL_MAX_JOBS="$2"
+      shift 2 || break
+      ;;
+    -e)
+      lesser-parallel-embed "$2"
+      exit
+      ;;
+    -h|--help)
+      lesser-parallel-help
+      exit
+      ;;
+    *)
+      ARGS+=( "$1" )
+      shift
+      ;;
+    esac
+  else
+    ARGS+=( "$1" )
+    shift
+  fi
+done
+
+if [ $# -gt 0 ]; then
+  echo -e "\e[31;1mError:\e[30;0m Number of parameters is not enough: $@"
+  exit 1
+fi
+
+lesser-parallel "${ARGS[@]}"
