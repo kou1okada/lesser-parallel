@@ -40,7 +40,11 @@ function lesser-parallel ()
         cmd+=( "$line" )
         ;;
       "{.}")
-        cmd+=( "$(basename "$line" "$ext")" )
+        if [ -z "$ext" ]; then
+          cmd+=( "$line" )
+        else
+          cmd+=( "${line%.*}" )
+        fi
         ;;
       "{/}")
         cmd+=( "$basename" )
