@@ -47,31 +47,13 @@ function lesser-parallel () # [<command> [<arguments> ...]] < <list_to_arguments
     cmd=( )
     for arg; do
       case "$arg" in
-      "{}")
-        cmd+=( "$line" )
-        ;;
-      "{.}")
-        if [ -z "$ext" ]; then
-          cmd+=( "$line" )
-        else
-          cmd+=( "${line%.*}" )
-        fi
-        ;;
-      "{/}")
-        cmd+=( "$basename" )
-        ;;
-      "{//}")
-        cmd+=( "$(dirname "$line")" )
-        ;;
-      "{/.}")
-        cmd+=( "$(basename "$basename" "$ext")" )
-        ;;
-      "{#}")
-        cmd+=( "$PARALLEL_SEQ" )
-        ;;
-      *)
-        cmd+=( "$arg" )
-        ;;
+      "{}")   cmd+=( "$line" ) ;;
+      "{.}")  [ -z "$ext" ] && cmd+=( "$line" ) || cmd+=( "${line%.*}" ) ;;
+      "{/}")  cmd+=( "$basename" ) ;;
+      "{//}") cmd+=( "$(dirname "$line")" ) ;;
+      "{/.}") cmd+=( "$(basename "$basename" "$ext")" ) ;;
+      "{#}")  cmd+=( "$PARALLEL_SEQ" ) ;;
+      *)      cmd+=( "$arg" ) ;;
       esac
     done
     
