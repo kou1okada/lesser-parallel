@@ -20,7 +20,7 @@ function lesser-parallel-restrict-jobs-count () # <maxjobs>
 #   Wait the number of running jobs will be reduced
 #   if the number of current runnning jobs is over <maxjobs>.
 {
-  while (( $(lesser-parallel-get-jobs-count) >= $1 )); do
+  while (( $1 <= $(lesser-parallel-get-jobs-count) )); do
     sleep 0.2
   done
 }
@@ -121,7 +121,7 @@ function lesser-parallel-embed () # [<target file>]
 SCRIPTNAME="${0##*/}"
 SCRIPTFILE="$(realpath "$(which $0)")"
 
-while (( $# > 0 )); do
+while (( 0 < $# )); do
   if (( ${#ARGS[@]} == 0 )); then
     case "$1" in
     -j)
