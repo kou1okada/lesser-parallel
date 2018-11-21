@@ -37,9 +37,8 @@ function lesser-parallel () # [<command> [<arguments> ...]] < <list_to_arguments
 #   {/.} : Input line without directory and extension (basename without suffix).
 #   {#}  : Job sequence number of paralell.
 {
-  local cmd arg lines line basename ext PARALLEL_SEQ=1
-  readarray -t lines
-  for line in "${lines[@]}"; do
+  local cmd arg line basename ext PARALLEL_SEQ=1
+  while read line; do
     basename="$(basename "$line")"
     ext="${basename##*.}"
     [ "$ext" = "$basename" ] && ext=""
