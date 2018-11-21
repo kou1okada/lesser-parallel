@@ -86,7 +86,7 @@ options:
   -e [FILE]   Embed Lesser Parallel to FILE
   -h, --help
 arguments:
-  {} {.} {/} {/.} {#}  Replacement strings
+  {} {.} {/} {//} {/.} {#}  Replacement strings
 
 EOD
 }
