@@ -147,9 +147,9 @@ while (( $# > 0 )); do
   fi
 done
 
-if (( $# > 0 )); then
-  echo -e "\e[31;1mError:\e[30;0m Number of parameters is not enough: $@"
+if (( ${#ARGS[@]} <= 0 )); then
+  lesser-parallel-help
   exit 1
-fi
+fi >&2
 
 lesser-parallel "${ARGS[@]}"
