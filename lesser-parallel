@@ -77,18 +77,18 @@ function lesser-parallel ()
 
 function lesser-parallel-help ()
 {
-cat <<EOD
-Usage:
-  ${SCRIPTNAME} [options] [command [arguments]] < list_ot_arguments
-  cat ... | ${SCRIPTNAME} [options] [command [arguments]]
-options:
-  -j N        Run n jobs in parallel
-  -e [FILE]   Embed Lesser Parallel to FILE
-  -h, --help
-arguments:
-  {} {.} {/} {//} {/.} {#}  Replacement strings
-
-EOD
+  cat <<-EOD
+	Usage:
+	  ${SCRIPTNAME} [options] [command [arguments]] < list_ot_arguments
+	  cat ... | ${SCRIPTNAME} [options] [command [arguments]]
+	options:
+	  -j N        Run n jobs in parallel
+	  -e [FILE]   Embed Lesser Parallel to FILE
+	  -h, --help
+	arguments:
+	  {} {.} {/} {//} {/.} {#}  Replacement strings
+	
+	EOD
 }
 
 function lesser-parallel-embed ()
