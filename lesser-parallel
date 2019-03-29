@@ -65,6 +65,43 @@ function lesser-parallel () # [<command> [<arguments> ...]] < <list_to_arguments
   lesser-parallel-restrict-jobs-count 1
 }
 
+function lesser-xargs () # [<options> ...] <command> [<initial-args> ...]
+#   Build and execute command line from standard input.
+# Arguments:
+#   -0, -null               : items are separated by a null, not whitespace.
+#   -d, --delimiter=<delim> : items are separated by a <delim>.
+#   -n, --max-args=<n>      : use at most <n> arguments per command line.
+#   -P, --max-procs=<P>     : run at most <P> processes at a time.
+{
+  local lines opt delim=( -d " " ) maxargs maxprocs=1
+  while [ "x${1:0:1}" = "x-" ]; do
+    opt="$1"
+    [[ "$1" =~ = ]] && set -- "${1%%=*}" "${1#*=}" "${@:2}"
+    case "$1" in
+      -0|--null) delim+=( -d $'\0' );          shift ;;
+      -d|--delimiter) delim=( -d "${@:2:1}" ); shift 2 || { error "Option requires an argument: $opt"; exit 1; } ;;
+      -n|--max-args)  maxargs="$2";            shift 2 || { error "Option requires an argument: $opt"; exit 1; } ;;
+      -P|--max-procs) maxprocs="$2";           shift 2 || { error "Option requires an argument: $opt"; exit 1; } ;;
+      *) error "Unknown option: $1"; exit 1 ;;
+    esac
+  done
+  
+  readarray "${delim[@]}" -t lines
+  [ -z "$maxargs" ] && maxargs="${#lines[@]}"
+  (( maxprocs <= 0 )) && maxprocs=$LESSER_PARALLEL_MAX_JOBS
+  while (( 0 < ${#lines[@]} )); do
+    if (( 1 < maxprocs )); then
+      lesser-parallel-restrict-jobs-count $maxprocs
+      "${@:-echo}" "${lines[@]:0:maxargs}" &
+    else
+      "${@:-echo}" "${lines[@]:0:maxargs}"
+    fi
+    lines=( "${lines[@]:maxargs}" )
+  done
+  
+  lesser-parallel-restrict-jobs-count 1
+}
+
 #/Lesser Parallel
 
 function lesser-parallel-help ()
